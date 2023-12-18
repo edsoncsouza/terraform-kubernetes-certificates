@@ -101,3 +101,37 @@ module "etcd_certs" {
   cert_ip_addresses = lookup(each.value, "cert_ip_addresses", [])
   cert_uses         = distinct(concat([for use in lookup(each.value, "cert_uses", []) : local.cert_uses[use]]...))
 }
+
+module "kubernetes_front_proxy_certs" {
+  for_each = {
+    front_proxy_client = {
+      common_name           = "front-proxy-client"
+      organization          = ""
+      validity_period_hours = "26280"
+    cert_uses = ["client"] },
+  }
+
+  source = "git::github.com/edsoncsouza/vishwakarma.git//modules/tls/certificate"
+  ca_config = {
+    key_pem  = module.ca["kubernetes_front_proxy_ca"].private_key_pem
+    cert_pem = module.ca["kubernetes_front_proxy_ca"].cert_pem
+  }
+  self_signed = false
+  cert_config = {
+    common_name           = lookup(each.value, "common_name", "")
+    organization          = lookup(each.value, "organization", "")
+    validity_period_hours = lookup(each.value, "validity_period_hours", "26280")
+  }
+  cert_hostnames    = lookup(each.value, "cert_hostnames", [])
+  cert_ip_addresses = lookup(each.value, "cert_ip_addresses", [])
+  cert_uses         = distinct(concat([for use in lookup(each.value, "cert_uses", []) : local.cert_uses[use]]...))
+
+}
+
+
+module "kubernetes_service_accounts_certs" {
+  for_each = {
+    sa = {},
+  }
+  source = "git::github.com/edsoncsouza/vishwakarma.git//modules/tls/private-key"
+}
